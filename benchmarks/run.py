@@ -58,6 +58,12 @@ except Exception as e:
     print('WARNING: unable to import TestVoluptuous')
     TestVoluptuous = None
 
+try:
+    from test_apischema import TestApischema
+except ImportError as err:
+    print('WARNING: unable to import TestApischema')
+    TestApischema = None
+
 PUNCTUATION = ' \t\n!"#$%&\'()*+,-./'
 LETTERS = string.ascii_letters
 UNICODE = '\xa0\xad¡¢£¤¥¦§¨©ª«¬ ®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ'
@@ -65,7 +71,7 @@ ALL = PUNCTUATION * 5 + LETTERS * 20 + UNICODE
 random = random.SystemRandom()
 
 # in order of performance for csv
-other_tests = [TestCAttrs, TestValideer, TestMarshmallow, TestVoluptuous, TestTrafaret, TestDRF, TestCerberus]
+other_tests = [TestApischema, TestCAttrs, TestValideer, TestMarshmallow, TestVoluptuous, TestTrafaret, TestDRF, TestCerberus]
 active_other_tests = [t for t in other_tests if t is not None]
 
 
@@ -110,7 +116,7 @@ def null_missing_email():
 
 def rand_date():
     r = random.randrange
-    return f'{r(1900, 2020)}-{r(0, 12)}-{r(0, 32)}T{r(0, 24)}:{r(0, 60)}:{r(0, 60)}'
+    return f'{r(1900, 2020)}-{r(0, 12):02}-{r(0, 32):02}T{r(0, 24):02}:{r(0, 60):02}:{r(0, 60):02}'
 
 
 def remove_missing(d):
@@ -223,11 +229,12 @@ def main():
         print(r)
 
     if 'SAVE' in os.environ:
-        save_md(csv_results)
+        save_md(csv_results, test_json)
 
 
-def save_md(data):
-    headings = 'Package', 'Version', 'Relative Performance', 'Mean validation time'
+def save_md(data, test_json):
+    operation = "serialization" if test_json else "deserialization"
+    headings = 'Package', 'Version', 'Relative Performance', f'Mean {operation} time'
     rows = [headings, ['---' for _ in headings]]
 
     first_avg = None
@@ -245,7 +252,10 @@ def save_md(data):
 
 {table}
 """
-    (Path(__file__).parent / '..' / 'docs' / '.benchmarks_table.md').write_text(text)
+    filename = ".benchmarks_table"
+    if test_json:
+        filename += "-json"
+    (Path(__file__).parent / '..' / 'docs' / f'{filename}.md').write_text(text)
 
 
 def diff():
